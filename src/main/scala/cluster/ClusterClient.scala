@@ -18,19 +18,15 @@ class ClusterClient extends Actor with ActorLogging {
   override def receive = {
     case MemberUp(member) => println(s"New member of the system $member.address")
     case me : MemberEvent => println("Member event " + me)
-    case Msg.SendMe(n) => (1 to n).foreach(z => sender ! Msg.Msg(z))
+    case Msg.SendMe(n) => {
+      (1 to n).foreach(z => sender ! Msg.Msg(z))
+      println(s"$n message sent!!!")
+    }
     case Msg.Msg(n) => print(s"$n ")
     case x => print(s"Unhandled $x ")
   }
 
   override def postStop() = cluster.unsubscribe(self)
-}
-
-object ClusterClient {
-  def main(args: Array[String]): Unit = {
-    val system: ActorSystem = Msg.buildActorSystem(args)
-    system.actorOf(Props[ClusterClient], name = "ClusterClient")
-  }
 }
 
 class BadGuy extends Actor {
@@ -44,15 +40,7 @@ class BadGuy extends Actor {
   override def receive: Receive = {
     case MemberUp(member) =>
       context.actorSelection(RootActorPath(member.address) / "user" / "ClusterClient") ! Msg.SendMe(100)
-    case x => println(x)
-
-  }
-}
-
-object BadGuy {
-  def main(args: Array[String]): Unit = {
-    val system: ActorSystem = Msg.buildActorSystem(args)
-    system.actorOf(Props[BadGuy], name = "BadGuy")
+    case Msg.Msg(x) if(x == 100) => println(s"$x received")
   }
 }
 
@@ -61,13 +49,7 @@ object Msg {
   case class SendMe(n : Int)
   case class Msg(count : Int)
 
-  def buildActorSystem(args : Array[String]) = {
-    println("Start..... " + args.toSeq)
-    var port = "6666"
-
-    if (!args.isEmpty)
-      port = args(0)
-
+  def buildActorSystem(port : Int = 6666) = {
     println(s"Port $port")
 
     val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).
