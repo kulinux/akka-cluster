@@ -2,6 +2,7 @@
 package cluster
 
 import akka.actor.{ActorSystem, Props}
+import com.typesafe.config.ConfigFactory
 
 
 object ClusterMultiJvmNode1 {

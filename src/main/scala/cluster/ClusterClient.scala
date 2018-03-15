@@ -3,7 +3,9 @@ package cluster
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props, RootActorPath}
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{MemberEvent, MemberUp}
+import akka.cluster.pubsub.DistributedPubSubMediator.Publish
 import com.typesafe.config.ConfigFactory
+import pubsubs.ClusterRef
 
 
 
@@ -28,6 +30,8 @@ class ClusterClient extends Actor with ActorLogging {
 
   override def postStop() = cluster.unsubscribe(self)
 }
+
+
 
 class BadGuy extends Actor {
 
