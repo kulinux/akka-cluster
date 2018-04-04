@@ -35,13 +35,41 @@ class PubSubClient extends Actor with ClusterRef {
   }
 }
 
+class PubSubClientWithTopic extends Actor {
+
+  val cluster = Cluster(context.system)
+
+  val mediator = DistributedPubSub(context.system).mediator
+  mediator ! Subscribe("content", Some("topicId"), self)
+
+  override def preStart(): Unit =
+    cluster.subscribe(self, classOf[MemberEvent], classOf[MemberUp])
+
+  override def postStop(): Unit =
+    cluster unsubscribe self
+
+  override def receive: Receive = {
+    case x : String => println(s"messsage $x")
+    case SubscribeAck(ack) => println(s"subscribe ok $ack")
+  }
+}
+
+
 object MsgsToPublish {
   case class MsgToPublish(s : String)
 }
 class PubSubPublisher extends Actor with ClusterRef {
 
   override def receive: Receive = {
-    case MsgToPublish(s) => mediator ! Publish("content", s)
+    case MsgToPublish(s) => mediator ! Publish("content", s, false)
+  }
+
+}
+
+class PubSubPublisherTopic extends Actor with ClusterRef {
+
+  override def receive: Receive = {
+    case MsgToPublish(s) => mediator ! Publish("content", s, true)
   }
 
 }
